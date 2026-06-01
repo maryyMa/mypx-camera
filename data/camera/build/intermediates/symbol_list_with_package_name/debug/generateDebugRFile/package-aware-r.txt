@@ -1,0 +1,1 @@
+com.mary.mypx.data.camera

@@ -1,0 +1,25 @@
+pluginManagement {
+    repositories {
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+
+rootProject.name = "MyPx"
+
+include ':app'
+include ':feature:camera'
+include ':domain'
+include ':data:camera'
+include ':data:ai'
+include ':core:common'
+include ':core:ui'
+include ':camera-sdk'
