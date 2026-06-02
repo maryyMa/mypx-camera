@@ -7,7 +7,39 @@
     android:layout_height="match_parent"
     tools:context=".ui.PreviewFragment">
 
-    <!-- 顶部标题栏 -->
+    <!-- 照片预览区域（标题栏下方到工具栏上方） -->
+    <ImageView
+        android:id="@+id/image_preview"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:scaleType="fitCenter"
+        app:layout_constraintBottom_toTopOf="@+id/toolbar_container"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/title_bar" />
+
+    <!-- 水印覆盖层（平铺 mypx 文字） -->
+    <com.mary.mypx.feature.camera.ui.WatermarkOverlayView
+        android:id="@+id/watermark_overlay"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:layout_constraintBottom_toTopOf="@+id/toolbar_container"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/title_bar" />
+
+    <!-- 裁剪覆盖层（裁剪模式时显示） -->
+    <com.mary.mypx.feature.camera.ui.CropOverlayView
+        android:id="@+id/crop_overlay"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:visibility="gone"
+        app:layout_constraintBottom_toTopOf="@+id/toolbar_container"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/title_bar" />
+
+    <!-- 顶部标题栏（覆盖在图片上方） -->
     <LinearLayout
         android:id="@+id/title_bar"
         android:layout_width="0dp"
@@ -65,27 +97,6 @@
 
     </LinearLayout>
 
-    <!-- 照片预览区域 -->
-    <ImageView
-        android:id="@+id/image_preview"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        android:scaleType="fitCenter"
-        app:layout_constraintBottom_toTopOf="@+id/toolbar_container"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/title_bar" />
-
-    <!-- 水印覆盖层（平铺 mypx 文字） -->
-    <com.mary.mypx.feature.camera.ui.WatermarkOverlayView
-        android:id="@+id/watermark_overlay"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        app:layout_constraintBottom_toBottomOf="@+id/image_preview"
-        app:layout_constraintEnd_toEndOf="@+id/image_preview"
-        app:layout_constraintStart_toStartOf="@+id/image_preview"
-        app:layout_constraintTop_toTopOf="@+id/image_preview" />
-
     <!-- 对比按钮（按住显示原图，松开显示编辑后） -->
     <!-- 放在图片区域内右下角 -->
     <ImageButton
@@ -99,28 +110,34 @@
         android:elevation="4dp"
         android:padding="8dp"
         android:src="@drawable/ic_compare"
-        app:layout_constraintBottom_toBottomOf="@+id/image_preview"
+        app:layout_constraintBottom_toTopOf="@+id/toolbar_container"
         app:layout_constraintEnd_toEndOf="parent"
         app:tint="@android:color/white" />
 
-    <!-- 工具栏容器 -->
-    <LinearLayout
+    <!-- 工具栏容器（始终显示，保持布局稳定） -->
+    <FrameLayout
         android:id="@+id/toolbar_container"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:background="#E6000000"
-        android:orientation="vertical"
-        android:paddingTop="12dp"
-        android:paddingBottom="16dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent">
 
-        <!-- 工具栏（水平滚动） -->
-        <HorizontalScrollView
+        <!-- 主工具栏 -->
+        <LinearLayout
+            android:id="@+id/main_toolbar"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:scrollbars="none">
+            android:orientation="vertical"
+            android:paddingTop="12dp"
+            android:paddingBottom="32dp">
+
+            <!-- 工具栏（水平滚动） -->
+            <HorizontalScrollView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:scrollbars="none">
 
             <LinearLayout
                 android:layout_width="wrap_content"
@@ -306,7 +323,55 @@
 
         </HorizontalScrollView>
 
+        </LinearLayout>
+
+        <!-- 裁剪工具栏（裁剪模式时覆盖显示） -->
+        <LinearLayout
+            android:id="@+id/crop_toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="#E6000000"
+            android:gravity="center"
+            android:orientation="horizontal"
+            android:paddingStart="16dp"
+            android:paddingTop="16dp"
+            android:paddingEnd="16dp"
+            android:paddingBottom="32dp"
+            android:visibility="gone">
+
+        <!-- 取消按钮 -->
+        <ImageButton
+            android:id="@+id/button_crop_cancel"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Cancel"
+            android:src="@drawable/ic_close"
+            app:tint="@android:color/white" />
+
+        <!-- 标题 -->
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:text="Crop"
+            android:textColor="@android:color/white"
+            android:textSize="16sp" />
+
+        <!-- 确认按钮 -->
+        <ImageButton
+            android:id="@+id/button_crop_confirm"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Confirm"
+            android:src="@drawable/ic_check"
+            app:tint="@android:color/white" />
+
     </LinearLayout>
+
+    </FrameLayout>
 
     <!-- 处理时间显示 -->
     <TextView

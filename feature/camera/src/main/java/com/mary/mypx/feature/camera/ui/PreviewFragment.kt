@@ -11,6 +11,9 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.PopupMenu
 import android.widget.Toast
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
@@ -110,12 +113,16 @@ class PreviewFragment : Fragment() {
      * 视图创建完成 - 初始化UI和加载图像
      * 
      * 【功能说明】
-     * 1. 获取从相机页面传递的照片URI
-     * 2. 加载照片图像
-     * 3. 设置UI交互
+     * 1. 隐藏系统状态栏（全屏显示）
+     * 2. 获取从相机页面传递的照片URI
+     * 3. 加载照片图像
+     * 4. 设置UI交互
      */
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        
+        // 隐藏系统状态栏
+        hideStatusBar()
         
         // 获取照片URI字符串
         photoUriString = arguments?.getString("photoUriString")
@@ -127,6 +134,26 @@ class PreviewFragment : Fragment() {
         
         // 设置UI交互
         setupUI()
+    }
+    
+    /**
+     * 隐藏系统状态栏
+     */
+    private fun hideStatusBar() {
+        val window = requireActivity().window
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+        val controller = WindowInsetsControllerCompat(window, binding.root)
+        controller.hide(WindowInsetsCompat.Type.statusBars())
+    }
+    
+    /**
+     * 显示系统状态栏
+     */
+    private fun showStatusBar() {
+        val window = requireActivity().window
+        WindowCompat.setDecorFitsSystemWindows(window, true)
+        val controller = WindowInsetsControllerCompat(window, binding.root)
+        controller.show(WindowInsetsCompat.Type.statusBars())
     }
     
     // ==================== 图像加载 ====================
@@ -181,8 +208,9 @@ class PreviewFragment : Fragment() {
      * 5. 工具栏：各个编辑工具的点击事件
      */
     private fun setupUI() {
-        // 返回按钮点击事件
+        // 返回按钮点击事件 - 显示状态栏并返回
         binding.buttonBack.setOnClickListener {
+            showStatusBar()
             findNavController().popBackStack()
         }
         
@@ -252,9 +280,9 @@ class PreviewFragment : Fragment() {
             Toast.makeText(requireContext(), "Portrait Beauty", Toast.LENGTH_SHORT).show()
         }
         
-        // 裁剪旋转
+        // 裁剪旋转 - 进入裁剪模式
         binding.toolCrop.setOnClickListener {
-            Toast.makeText(requireContext(), "Crop & Rotate", Toast.LENGTH_SHORT).show()
+            enterCropMode()
         }
         
         // 换天空
@@ -266,6 +294,97 @@ class PreviewFragment : Fragment() {
         binding.toolClothes.setOnClickListener {
             Toast.makeText(requireContext(), "Clothing Beauty", Toast.LENGTH_SHORT).show()
         }
+        
+        // 裁剪取消按钮
+        binding.buttonCropCancel.setOnClickListener {
+            exitCropMode(false)
+        }
+        
+        // 裁剪确认按钮
+        binding.buttonCropConfirm.setOnClickListener {
+            exitCropMode(true)
+        }
+    }
+    
+    /**
+     * 进入裁剪模式
+     * 
+     * 【功能说明】
+     * 1. 重置裁剪区域为图片的 4/5，居中显示
+     * 2. 显示裁剪覆盖层
+     * 3. 隐藏主工具栏，显示裁剪工具栏
+     * 4. 隐藏水印和对比按钮
+     */
+    private fun enterCropMode() {
+        // 显示裁剪覆盖层并重置裁剪区域
+        binding.cropOverlay.visibility = View.VISIBLE
+        binding.cropOverlay.resetCropRect()
+        
+        // 隐藏主工具栏，显示裁剪工具栏
+        binding.mainToolbar.visibility = View.GONE
+        binding.cropToolbar.visibility = View.VISIBLE
+        
+        // 隐藏水印和对比按钮
+        binding.watermarkOverlay.visibility = View.GONE
+        binding.compareButton.visibility = View.GONE
+    }
+    
+    /**
+     * 退出裁剪模式
+     * 
+     * @param applyCrop 是否应用裁剪
+     */
+    private fun exitCropMode(applyCrop: Boolean) {
+        if (applyCrop) {
+            // 应用裁剪
+            applyCropToImage()
+        }
+        
+        // 隐藏裁剪覆盖层
+        binding.cropOverlay.visibility = View.GONE
+        
+        // 显示主工具栏，隐藏裁剪工具栏
+        binding.mainToolbar.visibility = View.VISIBLE
+        binding.cropToolbar.visibility = View.GONE
+        
+        // 显示水印和对比按钮
+        binding.watermarkOverlay.visibility = View.VISIBLE
+        binding.compareButton.visibility = View.VISIBLE
+    }
+    
+    /**
+     * 应用裁剪到图片
+     * 
+     * 【功能说明】
+     * 1. 获取裁剪区域（相对坐标 0-1）
+     * 2. 计算实际像素坐标
+     * 3. 裁剪图片
+     * 4. 更新显示
+     */
+    private fun applyCropToImage() {
+        val currentBitmap = processedBitmap ?: originalBitmap ?: return
+        val cropRect = binding.cropOverlay.getCropRect()
+        
+        // 计算实际像素坐标
+        val x = (cropRect.left * currentBitmap.width).toInt()
+        val y = (cropRect.top * currentBitmap.height).toInt()
+        val width = ((cropRect.right - cropRect.left) * currentBitmap.width).toInt()
+        val height = ((cropRect.bottom - cropRect.top) * currentBitmap.height).toInt()
+        
+        // 边界检查
+        val safeX = x.coerceIn(0, currentBitmap.width - 1)
+        val safeY = y.coerceIn(0, currentBitmap.height - 1)
+        val safeWidth = width.coerceIn(1, currentBitmap.width - safeX)
+        val safeHeight = height.coerceIn(1, currentBitmap.height - safeY)
+        
+        // 裁剪图片
+        val croppedBitmap = Bitmap.createBitmap(currentBitmap, safeX, safeY, safeWidth, safeHeight)
+        
+        // 更新图片
+        processedBitmap = croppedBitmap
+        binding.imagePreview.setImageBitmap(croppedBitmap)
+        
+        Toast.makeText(requireContext(), "Image cropped", Toast.LENGTH_SHORT).show()
     }
     
     /**
@@ -505,9 +624,13 @@ class PreviewFragment : Fragment() {
      * 销毁视图 - 清理资源
      * 
      * 【功能说明】
-     * 在视图销毁时清理资源，避免内存泄漏
+     * 1. 显示系统状态栏
+     * 2. 置空绑定，避免内存泄漏
      */
     override fun onDestroyView() {
+        // 显示系统状态栏
+        showStatusBar()
+        
         super.onDestroyView()
         // 置空绑定，避免内存泄漏
         _binding = null

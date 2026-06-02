@@ -15,6 +15,9 @@ import android.widget.SeekBar
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
@@ -118,8 +121,19 @@ class CameraFragment : Fragment() {
     
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        hideStatusBar() // 隐藏系统状态栏
         setupUI()       // 设置 UI 交互
         checkPermissions() // 检查并请求相机权限
+    }
+    
+    /**
+     * 隐藏系统状态栏
+     */
+    private fun hideStatusBar() {
+        val window = requireActivity().window
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+        val controller = WindowInsetsControllerCompat(window, binding.root)
+        controller.hide(WindowInsetsCompat.Type.statusBars())
     }
     
     override fun onDestroyView() {
@@ -136,6 +150,11 @@ class CameraFragment : Fragment() {
     private fun setupUI() {
         // 获取美颜 TextureView 引用
         beautyTextureView = binding.beautyTextureView
+        
+        // 返回按钮
+        binding.buttonBack.setOnClickListener {
+            findNavController().popBackStack()
+        }
         
         // 美颜强度滑块
         binding.seekbarBeauty.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
