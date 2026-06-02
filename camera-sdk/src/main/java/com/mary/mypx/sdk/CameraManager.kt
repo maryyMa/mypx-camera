@@ -1,7 +1,10 @@
 package com.mary.mypx.sdk
 
 import android.content.Context
+import android.graphics.SurfaceTexture
+import android.util.Log
 import android.util.Size
+import android.view.Surface
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageCapture
@@ -39,6 +42,10 @@ import java.util.concurrent.Executors
  * @param context Android上下文，用于获取系统服务和资源
  */
 class CameraManager(private val context: Context) {
+    
+    companion object {
+        private const val TAG = "CameraManager"
+    }
     
     // ==================== 相机核心组件 ====================
     
@@ -332,6 +339,81 @@ class CameraManager(private val context: Context) {
      * false: 使用后置摄像头
      */
     fun isUsingFrontCamera(): Boolean = currentLensFacing == CameraSelector.LENS_FACING_FRONT
+    
+    /**
+     * 使用自定义 SurfaceTexture 启动相机预览
+     * 
+     * 【功能说明】
+     * 这个方法用于配合 OpenGL 渲染使用。
+     * 相机帧会输出到提供的 SurfaceTexture，然后由 OpenGL 进行处理和显示。
+     * 
+     * 【使用场景】
+     * 配合 BeautyTextureView 使用，实现 OpenGL 美颜效果。
+     * 
+     * 【参数说明】
+     * @param lifecycleOwner 生命周期所有者
+     * @param surfaceTexture 自定义的 SurfaceTexture（来自 OpenGL）
+     * @param width 预览宽度
+     * @param height 预览高度
+     */
+    fun startPreviewWithSurface(
+        lifecycleOwner: LifecycleOwner,
+        surfaceTexture: SurfaceTexture,
+        width: Int = 1280,
+        height: Int = 720
+    ) {
+        // 获取 CameraProvider 实例
+        val cameraProviderFuture = ProcessCameraProvider.getInstance(context)
+        
+        cameraProviderFuture.addListener({
+            cameraProvider = cameraProviderFuture.get()
+            
+            // 设置 SurfaceTexture 的缓冲区大小
+            surfaceTexture.setDefaultBufferSize(width, height)
+            
+            // 创建预览 UseCase
+            preview = Preview.Builder()
+                .setTargetResolution(Size(width, height))
+                .build()
+                .also {
+                    // 使用自定义的 SurfaceTexture
+                    it.setSurfaceProvider { request ->
+                        val surface = Surface(surfaceTexture)
+                        request.provideSurface(surface, ContextCompat.getMainExecutor(context)) {
+                            // Surface 不再使用
+                        }
+                    }
+                }
+            
+            // 创建拍照 UseCase
+            imageCapture = ImageCapture.Builder()
+                .setCaptureMode(ImageCapture.CAPTURE_MODE_MAXIMIZE_QUALITY)
+                .setFlashMode(currentFlashMode)
+                .build()
+            
+            // 选择摄像头
+            val cameraSelector = CameraSelector.Builder()
+                .requireLensFacing(currentLensFacing)
+                .build()
+            
+            try {
+                // 解绑所有 UseCase
+                cameraProvider?.unbindAll()
+                
+                // 绑定 UseCase 到生命周期
+                camera = cameraProvider?.bindToLifecycle(
+                    lifecycleOwner,
+                    cameraSelector,
+                    preview,
+                    imageCapture
+                )
+                
+                Log.d(TAG, "Camera started with custom SurfaceTexture")
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to start camera", e)
+            }
+        }, ContextCompat.getMainExecutor(context))
+    }
     
     /**
      * 释放资源 - 清理相机占用的资源

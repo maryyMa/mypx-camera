@@ -7,53 +7,72 @@
     android:layout_height="match_parent"
     tools:context=".ui.CameraFragment">
 
-    <!-- 相机预览层（原始画面） -->
-    <androidx.camera.view.PreviewView
-        android:id="@+id/preview_view"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        app:layout_constraintBottom_toTopOf="@+id/controls_layout"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
-
     <!-- 
-        滤镜处理后的图像覆盖层（显示美颜效果）
-        
-        【作用】
-        这个ImageView覆盖在PreviewView上方，用于显示滤镜处理后的画面。
-        
-        【工作原理】
-        1. PreviewView 显示原始相机画面（底层）
-        2. ImageView 显示滤镜处理后的画面（上层）
-        3. 当选择滤镜时，ImageView可见，覆盖原始画面
-        4. 当选择"无滤镜"时，ImageView隐藏，显示原始画面
-        
-        【为什么用覆盖层？】
-        PreviewView是CameraX专用组件，无法直接修改其显示内容。
-        所以我们用一个ImageView覆盖在上面，显示处理后的图像。
-        
-        【性能考虑】
-        - 使用fitXY缩放模式，确保图像完全覆盖预览区域
-        - 默认visibility="gone"，不占用资源
-        - 只在选择滤镜时才显示
+        美颜 TextureView
+        使用 OpenGL 渲染，实时显示美颜效果
     -->
-    <ImageView
-        android:id="@+id/filtered_preview"
+    <com.mary.mypx.sdk.BeautyTextureView
+        android:id="@+id/beauty_texture_view"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:scaleType="fitXY"
-        android:visibility="gone"
-        app:layout_constraintBottom_toTopOf="@+id/controls_layout"
+        app:layout_constraintBottom_toTopOf="@+id/beauty_layout"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
+    <!-- 美颜控制区域 -->
+    <LinearLayout
+        android:id="@+id/beauty_layout"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:background="#CC000000"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:padding="16dp"
+        app:layout_constraintBottom_toTopOf="@+id/controls_layout"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent">
+
+        <!-- 美颜标签 -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="美颜"
+            android:textColor="@android:color/white"
+            android:textSize="14sp" />
+
+        <!-- 美颜强度进度条 -->
+        <SeekBar
+            android:id="@+id/seekbar_beauty"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="12dp"
+            android:layout_marginEnd="12dp"
+            android:max="100"
+            android:progress="50"
+            android:progressTint="@android:color/holo_purple"
+            android:thumbTint="@android:color/holo_purple" />
+
+        <!-- 强度数值显示 -->
+        <TextView
+            android:id="@+id/text_beauty_level"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="50%"
+            android:textColor="@android:color/white"
+            android:textSize="14sp"
+            android:minWidth="40dp"
+            android:gravity="end" />
+
+    </LinearLayout>
+
+    <!-- 控制按钮区域 -->
     <LinearLayout
         android:id="@+id/controls_layout"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:background="#80000000"
+        android:background="#CC000000"
         android:gravity="center"
         android:orientation="horizontal"
         android:padding="16dp"
@@ -61,6 +80,7 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent">
 
+        <!-- 闪光灯按钮 -->
         <ImageButton
             android:id="@+id/button_flash"
             android:layout_width="48dp"
@@ -70,6 +90,7 @@
             android:src="@android:drawable/ic_menu_manage"
             app:tint="@android:color/white" />
 
+        <!-- 拍照按钮 -->
         <ImageButton
             android:id="@+id/button_take_photo"
             android:layout_width="72dp"
@@ -81,6 +102,7 @@
             android:src="@android:drawable/ic_menu_camera"
             app:tint="@android:color/white" />
 
+        <!-- 切换摄像头按钮 -->
         <ImageButton
             android:id="@+id/button_switch_camera"
             android:layout_width="48dp"
@@ -92,48 +114,7 @@
 
     </LinearLayout>
 
-    <LinearLayout
-        android:id="@+id/filter_layout"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:background="#80000000"
-        android:gravity="center"
-        android:orientation="horizontal"
-        android:padding="8dp"
-        app:layout_constraintBottom_toTopOf="@+id/controls_layout"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent">
-
-        <com.google.android.material.chip.Chip
-            android:id="@+id/chip_none"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="None"
-            style="@style/Widget.MaterialComponents.Chip.Choice" />
-
-        <com.google.android.material.chip.Chip
-            android:id="@+id/chip_beauty"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Beauty"
-            style="@style/Widget.MaterialComponents.Chip.Choice" />
-
-        <com.google.android.material.chip.Chip
-            android:id="@+id/chip_super_res"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Super Res"
-            style="@style/Widget.MaterialComponents.Chip.Choice" />
-
-        <com.google.android.material.chip.Chip
-            android:id="@+id/chip_night"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Night"
-            style="@style/Widget.MaterialComponents.Chip.Choice" />
-
-    </LinearLayout>
-
+    <!-- 性能监控显示 -->
     <TextView
         android:id="@+id/text_performance"
         android:layout_width="wrap_content"

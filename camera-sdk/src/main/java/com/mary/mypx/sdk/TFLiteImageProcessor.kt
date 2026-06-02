@@ -128,13 +128,14 @@ class TFLiteImageProcessor(private val context: Context) : ImageProcessor {
      * 应用超分辨率 - 将低清图片变高清
      * 
      * 【算法说明】
-     * 这里使用简单的图像放大模拟超分辨率效果。
-     * 真正的超分辨率需要使用AI模型（如ESRGAN、Real-ESRGAN等）。
+     * 超分辨率的目的是提高图像清晰度。
+     * 这里使用锐化滤镜来模拟超分辨率效果，保持原始尺寸。
      * 
-     * 【图像放大】
-     * 使用Bitmap.createScaledBitmap进行放大：
-     * - scale=2：放大2倍
-     * - true：使用双线性插值，让放大后的图像更平滑
+     * 【锐化原理】
+     * 使用卷积核对图像进行锐化处理：
+     * - 增强边缘对比度
+     * - 让图像看起来更清晰
+     * - 保持原始尺寸不变
      * 
      * 【真正的超分辨率】
      * 实际项目中应该：
@@ -143,16 +144,73 @@ class TFLiteImageProcessor(private val context: Context) : ImageProcessor {
      * 3. 输出高清图像
      * 
      * @param bitmap 输入图像
-     * @return 放大后的图像
+     * @return 锐化后的图像
      */
     private fun applySuperResolution(bitmap: Bitmap): Bitmap {
-        // 放大倍数
-        val scale = 2
-        // 计算新的宽高
-        val width = bitmap.width * scale
-        val height = bitmap.height * scale
-        // 使用双线性插值放大图像
-        return Bitmap.createScaledBitmap(bitmap, width, height, true)
+        val width = bitmap.width
+        val height = bitmap.height
+        val result = Bitmap.createBitmap(width, height, bitmap.config ?: Bitmap.Config.ARGB_8888)
+        
+        // 获取原图像素
+        val pixels = IntArray(width * height)
+        bitmap.getPixels(pixels, 0, width, 0, 0, width, height)
+        
+        // 创建输出像素数组
+        val outputPixels = IntArray(width * height)
+        
+        // 锐化卷积核
+        // 0  -1  0
+        // -1  5 -1
+        // 0  -1  0
+        for (y in 1 until height - 1) {
+            for (x in 1 until width - 1) {
+                val idx = y * width + x
+                
+                // 获取周围像素
+                val center = pixels[idx]
+                val top = pixels[(y - 1) * width + x]
+                val bottom = pixels[(y + 1) * width + x]
+                val left = pixels[y * width + (x - 1)]
+                val right = pixels[y * width + (x + 1)]
+                
+                // 应用锐化卷积核
+                val alpha = android.graphics.Color.alpha(center)
+                var red = android.graphics.Color.red(center) * 5 - 
+                          android.graphics.Color.red(top) - 
+                          android.graphics.Color.red(bottom) - 
+                          android.graphics.Color.red(left) - 
+                          android.graphics.Color.red(right)
+                var green = android.graphics.Color.green(center) * 5 - 
+                            android.graphics.Color.green(top) - 
+                            android.graphics.Color.green(bottom) - 
+                            android.graphics.Color.green(left) - 
+                            android.graphics.Color.green(right)
+                var blue = android.graphics.Color.blue(center) * 5 - 
+                           android.graphics.Color.blue(top) - 
+                           android.graphics.Color.blue(bottom) - 
+                           android.graphics.Color.blue(left) - 
+                           android.graphics.Color.blue(right)
+                
+                // 限制在0-255范围内
+                red = red.coerceIn(0, 255)
+                green = green.coerceIn(0, 255)
+                blue = blue.coerceIn(0, 255)
+                
+                outputPixels[idx] = android.graphics.Color.argb(alpha, red, green, blue)
+            }
+        }
+        
+        // 复制边缘像素（不处理边缘）
+        for (y in 0 until height) {
+            for (x in 0 until width) {
+                if (y == 0 || y == height - 1 || x == 0 || x == width - 1) {
+                    outputPixels[y * width + x] = pixels[y * width + x]
+                }
+            }
+        }
+        
+        result.setPixels(outputPixels, 0, width, 0, 0, width, height)
+        return result
     }
     
     /**
