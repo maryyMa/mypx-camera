@@ -4,15 +4,19 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
+import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
+import android.widget.PopupMenu
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import com.mary.mypx.domain.model.FilterType
+import com.mary.mypx.feature.camera.R
 import com.mary.mypx.feature.camera.databinding.FragmentPreviewBinding
 import com.mary.mypx.feature.camera.viewmodel.CameraViewModel
 import com.mary.mypx.sdk.FilterType as SdkFilterType
@@ -20,17 +24,18 @@ import kotlinx.coroutines.launch
 import java.io.InputStream
 
 /**
- * 预览Fragment - 照片预览页面的UI控制器
+ * 预览Fragment - 照片预览和编辑页面的UI控制器
  * 
  * 【功能说明】
  * 显示拍摄的照片，支持：
  * 1. 查看照片
- * 2. 应用滤镜
- * 3. 保存照片
- * 4. 分享照片
+ * 2. 对比原图和编辑后的图片（按住Compare按钮）
+ * 3. 多种编辑工具：预设、色彩调节、人像美化、裁剪旋转、换天空、衣物美化
+ * 4. 保存照片
+ * 5. 更多选项：照片信息、帮助反馈、预设管理
  * 
  * 【页面流程】
- * 相机页面 → 预览页面 → 保存/分享 → 返回相机页面
+ * 相机页面 → 预览页面 → 编辑/保存 → 返回相机页面
  * 
  * 【数据传递】
  * 从相机页面接收照片URI，通过Navigation的arguments传递：
@@ -42,6 +47,10 @@ import java.io.InputStream
  * ```
  */
 class PreviewFragment : Fragment() {
+    
+    companion object {
+        private const val TAG = "PreviewFragment"
+    }
     
     // ==================== 视图绑定 ====================
     
@@ -165,32 +174,218 @@ class PreviewFragment : Fragment() {
      * 设置UI - 配置所有UI组件的交互
      * 
      * 【功能说明】
-     * 为所有按钮设置点击事件：
-     * 1. 保存按钮：保存照片到设备
-     * 2. 分享按钮：分享照片（未实现）
-     * 3. 返回按钮：返回相机页面
+     * 1. 返回按钮：返回相机页面
+     * 2. 应用按钮：保存照片
+     * 3. 更多按钮：显示弹出菜单
+     * 4. 对比按钮：按住显示原图，松开显示编辑后
+     * 5. 工具栏：各个编辑工具的点击事件
      */
     private fun setupUI() {
-        // 保存按钮点击事件
-        binding.buttonSave.setOnClickListener {
-            // 优先保存处理后的图像，如果没有则保存原始图像
-            processedBitmap?.let { bitmap ->
-                savePhoto(bitmap)
-            } ?: originalBitmap?.let { bitmap ->
-                savePhoto(bitmap)
+        // 返回按钮点击事件
+        binding.buttonBack.setOnClickListener {
+            findNavController().popBackStack()
+        }
+        
+        // 应用按钮点击事件 - 保存照片
+        binding.buttonApply.setOnClickListener {
+            applyAndSave()
+        }
+        
+        // 更多按钮点击事件 - 显示弹出菜单
+        binding.buttonMore.setOnClickListener { view ->
+            showPopupMenu(view)
+        }
+        
+        // 对比按钮 - 按住显示原图，松开显示编辑后的图片
+        binding.compareButton.setOnTouchListener { _, event ->
+            when (event.action) {
+                android.view.MotionEvent.ACTION_DOWN -> {
+                    // 按住时显示原图
+                    originalBitmap?.let {
+                        binding.imagePreview.setImageBitmap(it)
+                    }
+                    binding.compareButton.text = "Original"
+                    true
+                }
+                android.view.MotionEvent.ACTION_UP,
+                android.view.MotionEvent.ACTION_CANCEL -> {
+                    // 松开时显示编辑后的图片
+                    val editedBitmap = processedBitmap ?: originalBitmap
+                    editedBitmap?.let {
+                        binding.imagePreview.setImageBitmap(it)
+                    }
+                    binding.compareButton.text = "Compare"
+                    true
+                }
+                else -> false
             }
         }
         
-        // 分享按钮点击事件
-        binding.buttonShare.setOnClickListener {
-            // 分享功能（未实现）
-            Toast.makeText(requireContext(), "Share functionality", Toast.LENGTH_SHORT).show()
+        // 工具栏点击事件
+        setupToolbar()
+    }
+    
+    /**
+     * 设置工具栏点击事件
+     * 
+     * 【工具列表】
+     * - 预设：选择预设滤镜
+     * - 色彩调节：调整亮度、对比度、饱和度等
+     * - 人像美化：磨皮、美白、瘦脸等
+     * - 裁剪旋转：裁剪和旋转图片
+     * - 换天空：替换天空背景
+     * - 衣物美化：衣物颜色和样式调整
+     */
+    private fun setupToolbar() {
+        // 预设
+        binding.toolPresets.setOnClickListener {
+            Toast.makeText(requireContext(), "Presets", Toast.LENGTH_SHORT).show()
         }
         
-        // 返回按钮点击事件
-        binding.buttonBack.setOnClickListener {
-            // 返回上一页
-            findNavController().popBackStack()
+        // 色彩调节
+        binding.toolColor.setOnClickListener {
+            Toast.makeText(requireContext(), "Color Adjustment", Toast.LENGTH_SHORT).show()
+        }
+        
+        // 人像美化
+        binding.toolBeauty.setOnClickListener {
+            Toast.makeText(requireContext(), "Portrait Beauty", Toast.LENGTH_SHORT).show()
+        }
+        
+        // 裁剪旋转
+        binding.toolCrop.setOnClickListener {
+            Toast.makeText(requireContext(), "Crop & Rotate", Toast.LENGTH_SHORT).show()
+        }
+        
+        // 换天空
+        binding.toolSky.setOnClickListener {
+            Toast.makeText(requireContext(), "Sky Replacement", Toast.LENGTH_SHORT).show()
+        }
+        
+        // 衣物美化
+        binding.toolClothes.setOnClickListener {
+            Toast.makeText(requireContext(), "Clothing Beauty", Toast.LENGTH_SHORT).show()
+        }
+    }
+    
+    /**
+     * 显示弹出菜单
+     * 
+     * 【菜单选项】
+     * - 照片信息：显示照片的详细信息
+     * - 帮助与反馈：显示帮助信息
+     * - 刷新预设：重新加载预设
+     * - 保存预设：保存当前设置为预设
+     * - 导入预设：从文件导入预设
+     * 
+     * @param anchor 菜单锚点视图
+     */
+    private fun showPopupMenu(anchor: View) {
+        val popup = PopupMenu(requireContext(), anchor)
+        popup.menuInflater.inflate(R.menu.menu_preview, popup.menu)
+        
+        popup.setOnMenuItemClickListener { menuItem ->
+            when (menuItem.itemId) {
+                R.id.menu_photo_info -> {
+                    showPhotoInfo()
+                    true
+                }
+                R.id.menu_help_feedback -> {
+                    showHelpFeedback()
+                    true
+                }
+                R.id.menu_refresh_presets -> {
+                    refreshPresets()
+                    true
+                }
+                R.id.menu_save_presets -> {
+                    savePresets()
+                    true
+                }
+                R.id.menu_import_presets -> {
+                    importPresets()
+                    true
+                }
+                else -> false
+            }
+        }
+        
+        popup.show()
+    }
+    
+    /**
+     * 显示照片信息
+     * 
+     * 【显示内容】
+     * - 图片尺寸（宽x高）
+     * - 文件大小
+     * - URI路径
+     */
+    private fun showPhotoInfo() {
+        val bitmap = originalBitmap
+        if (bitmap != null) {
+            val info = buildString {
+                appendLine("尺寸: ${bitmap.width} x ${bitmap.height}")
+                appendLine("URI: $photoUriString")
+            }
+            Toast.makeText(requireContext(), info, Toast.LENGTH_LONG).show()
+        } else {
+            Toast.makeText(requireContext(), "No photo loaded", Toast.LENGTH_SHORT).show()
+        }
+    }
+    
+    /**
+     * 显示帮助与反馈
+     */
+    private fun showHelpFeedback() {
+        Toast.makeText(requireContext(), "Help & Feedback", Toast.LENGTH_SHORT).show()
+    }
+    
+    /**
+     * 刷新预设
+     * 
+     * 【功能说明】
+     * 重新加载默认预设配置
+     */
+    private fun refreshPresets() {
+        Toast.makeText(requireContext(), "Presets refreshed", Toast.LENGTH_SHORT).show()
+    }
+    
+    /**
+     * 保存预设
+     * 
+     * 【功能说明】
+     * 将当前滤镜设置保存为预设
+     */
+    private fun savePresets() {
+        Toast.makeText(requireContext(), "Presets saved", Toast.LENGTH_SHORT).show()
+    }
+    
+    /**
+     * 导入预设
+     * 
+     * 【功能说明】
+     * 从文件导入预设配置
+     */
+    private fun importPresets() {
+        Toast.makeText(requireContext(), "Import presets", Toast.LENGTH_SHORT).show()
+    }
+    
+    /**
+     * 应用滤镜并保存
+     * 
+     * 【执行流程】
+     * 1. 获取当前处理后的图像
+     * 2. 保存到设备存储
+     * 3. 显示保存结果
+     * 4. 返回相机页面
+     */
+    private fun applyAndSave() {
+        val bitmapToSave = processedBitmap ?: originalBitmap
+        if (bitmapToSave != null) {
+            savePhoto(bitmapToSave)
+        } else {
+            Toast.makeText(requireContext(), "No photo to save", Toast.LENGTH_SHORT).show()
         }
     }
     

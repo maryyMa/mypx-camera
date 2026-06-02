@@ -234,25 +234,23 @@ class BeautyTextureView @JvmOverloads constructor(
                     // 确保 EGL 上下文是当前线程的
                     makeCurrent()
                     
-                    // 执行 OpenGL 渲染（更新纹理、应用美颜着色器、绘制到屏幕）
+                    // 执行 OpenGL 渲染（更新纹理、应用美颜着色器、绘制到后缓冲区）
                     renderer?.onDrawFrame(null)
-                    
-                    // 交换前后缓冲区，将渲染结果显示到屏幕
-                    swapBuffers()
 
-                    // 如果有待处理的拍照请求，在渲染完成后截帧
+                    // 如果有待处理的拍照请求，在交换缓冲区之前截帧
+                    // 必须在 swapBuffers 之前读取，否则后缓冲区内容未定义
                     if (capturePending) {
                         capturePending = false
-                        
-                        // 从帧缓冲区读取像素，生成 Bitmap（已包含美颜效果）
                         val bitmap = renderer?.captureCurrentFrame()
                         if (bitmap != null) {
                             val cb = captureCallback
-                            captureCallback = null  // 清空回调，避免重复触发
-                            // 切换到主线程执行回调
+                            captureCallback = null
                             Handler(Looper.getMainLooper()).post { cb?.invoke(bitmap) }
                         }
                     }
+                    
+                    // 交换前后缓冲区，将渲染结果显示到屏幕
+                    swapBuffers()
                 } else {
                     // 无新帧且无拍照请求，短暂休眠避免 CPU 空转
                     try {

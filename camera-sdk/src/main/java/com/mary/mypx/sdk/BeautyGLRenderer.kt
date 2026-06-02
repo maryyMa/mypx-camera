@@ -354,6 +354,9 @@ class BeautyGLRenderer(
     fun captureCurrentFrame(): Bitmap? {
         if (width <= 0 || height <= 0) return null
         
+        // 确保 GPU 渲染完成后再读取像素
+        GLES20.glFinish()
+        
         // 分配缓冲区用于读取像素数据（RGBA = 4字节/像素）
         val buffer = ByteBuffer.allocateDirect(width * height * 4)
             .order(ByteOrder.LITTLE_ENDIAN)

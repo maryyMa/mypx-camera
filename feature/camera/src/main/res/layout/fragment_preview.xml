@@ -7,53 +7,300 @@
     android:layout_height="match_parent"
     tools:context=".ui.PreviewFragment">
 
+    <!-- 顶部标题栏 -->
+    <LinearLayout
+        android:id="@+id/title_bar"
+        android:layout_width="0dp"
+        android:layout_height="56dp"
+        android:background="#CC000000"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="8dp"
+        android:paddingEnd="8dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <!-- 返回按钮 -->
+        <ImageButton
+            android:id="@+id/button_back"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Back"
+            android:src="@drawable/ic_arrow_back"
+            app:tint="@android:color/white" />
+
+        <!-- 标题文字 -->
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:text="Photo"
+            android:textColor="@android:color/white"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <!-- 应用按钮 -->
+        <ImageButton
+            android:id="@+id/button_apply"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_marginEnd="8dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Apply"
+            android:src="@drawable/ic_check"
+            app:tint="@android:color/white" />
+
+        <!-- 更多按钮（三个点） -->
+        <ImageButton
+            android:id="@+id/button_more"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="More"
+            android:src="@drawable/ic_more_vert"
+            app:tint="@android:color/white" />
+
+    </LinearLayout>
+
+    <!-- 照片预览区域 -->
     <ImageView
         android:id="@+id/image_preview"
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:scaleType="fitCenter"
-        app:layout_constraintBottom_toTopOf="@+id/button_layout"
+        app:layout_constraintBottom_toTopOf="@+id/toolbar_container"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toBottomOf="@+id/title_bar" />
 
+    <!-- 对比按钮（按住显示原图，松开显示编辑后） -->
+    <!-- 放在图片区域内右下角 -->
+    <TextView
+        android:id="@+id/compare_button"
+        android:layout_width="wrap_content"
+        android:layout_height="32dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="16dp"
+        android:background="@drawable/compare_button_bg"
+        android:elevation="4dp"
+        android:gravity="center"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:text="Compare"
+        android:textColor="@android:color/white"
+        android:textSize="12sp"
+        app:layout_constraintBottom_toBottomOf="@+id/image_preview"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <!-- 工具栏容器 -->
     <LinearLayout
-        android:id="@+id/button_layout"
+        android:id="@+id/toolbar_container"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:background="#80000000"
-        android:gravity="center"
-        android:orientation="horizontal"
-        android:padding="16dp"
+        android:background="#E6000000"
+        android:orientation="vertical"
+        android:paddingTop="12dp"
+        android:paddingBottom="16dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent">
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/button_save"
-            android:layout_width="wrap_content"
+        <!-- 工具栏（水平滚动） -->
+        <HorizontalScrollView
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Save"
-            style="@style/Widget.MaterialComponents.Button.TextButton" />
+            android:scrollbars="none">
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/button_share"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:text="Share"
-            style="@style/Widget.MaterialComponents.Button.TextButton" />
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp">
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/button_back"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:text="Back"
-            style="@style/Widget.MaterialComponents.Button.TextButton" />
+                <!-- 预设 -->
+                <LinearLayout
+                    android:id="@+id/tool_presets"
+                    android:layout_width="72dp"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:orientation="vertical"
+                    android:padding="4dp">
+
+                    <ImageView
+                        android:layout_width="28dp"
+                        android:layout_height="28dp"
+                        android:contentDescription="Presets"
+                        android:src="@drawable/ic_tune"
+                        app:tint="@android:color/white" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:text="Presets"
+                        android:textColor="@android:color/white"
+                        android:textSize="11sp" />
+
+                </LinearLayout>
+
+                <!-- 色彩调节 -->
+                <LinearLayout
+                    android:id="@+id/tool_color"
+                    android:layout_width="72dp"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:orientation="vertical"
+                    android:padding="4dp">
+
+                    <ImageView
+                        android:layout_width="28dp"
+                        android:layout_height="28dp"
+                        android:contentDescription="Color"
+                        android:src="@drawable/ic_palette"
+                        app:tint="@android:color/white" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:text="Color"
+                        android:textColor="@android:color/white"
+                        android:textSize="11sp" />
+
+                </LinearLayout>
+
+                <!-- 人像美化 -->
+                <LinearLayout
+                    android:id="@+id/tool_beauty"
+                    android:layout_width="72dp"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:orientation="vertical"
+                    android:padding="4dp">
+
+                    <ImageView
+                        android:layout_width="28dp"
+                        android:layout_height="28dp"
+                        android:contentDescription="Beauty"
+                        android:src="@drawable/ic_face"
+                        app:tint="@android:color/white" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:text="Beauty"
+                        android:textColor="@android:color/white"
+                        android:textSize="11sp" />
+
+                </LinearLayout>
+
+                <!-- 裁剪旋转（带 free 标记） -->
+                <FrameLayout
+                    android:layout_width="72dp"
+                    android:layout_height="wrap_content"
+                    android:padding="4dp">
+
+                    <LinearLayout
+                        android:id="@+id/tool_crop"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center"
+                        android:orientation="vertical">
+
+                        <ImageView
+                            android:layout_width="28dp"
+                            android:layout_height="28dp"
+                            android:contentDescription="Crop"
+                            android:src="@drawable/ic_crop"
+                            app:tint="@android:color/white" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:text="Crop"
+                            android:textColor="@android:color/white"
+                            android:textSize="11sp" />
+
+                    </LinearLayout>
+
+                    <!-- free 标记 -->
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="top|end"
+                        android:text="free"
+                        android:textColor="#FF9800"
+                        android:textSize="8sp"
+                        android:textStyle="bold" />
+
+                </FrameLayout>
+
+                <!-- 换天空 -->
+                <LinearLayout
+                    android:id="@+id/tool_sky"
+                    android:layout_width="72dp"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:orientation="vertical"
+                    android:padding="4dp">
+
+                    <ImageView
+                        android:layout_width="28dp"
+                        android:layout_height="28dp"
+                        android:contentDescription="Sky"
+                        android:src="@drawable/ic_sunny"
+                        app:tint="@android:color/white" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:text="Sky"
+                        android:textColor="@android:color/white"
+                        android:textSize="11sp" />
+
+                </LinearLayout>
+
+                <!-- 衣物美化 -->
+                <LinearLayout
+                    android:id="@+id/tool_clothes"
+                    android:layout_width="72dp"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:orientation="vertical"
+                    android:padding="4dp">
+
+                    <ImageView
+                        android:layout_width="28dp"
+                        android:layout_height="28dp"
+                        android:contentDescription="Clothes"
+                        android:src="@drawable/ic_checkroom"
+                        app:tint="@android:color/white" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:text="Clothes"
+                        android:textColor="@android:color/white"
+                        android:textSize="11sp" />
+
+                </LinearLayout>
+
+            </LinearLayout>
+
+        </HorizontalScrollView>
 
     </LinearLayout>
 
+    <!-- 处理时间显示 -->
     <TextView
         android:id="@+id/text_processing_time"
         android:layout_width="wrap_content"
@@ -65,6 +312,6 @@
         android:textSize="12sp"
         android:visibility="gone"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toBottomOf="@+id/title_bar" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

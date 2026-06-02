@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:id="@+id/menu_photo_info"
+        android:title="Photo Info" />
+
+    <item
+        android:id="@+id/menu_help_feedback"
+        android:title="Help &amp; Feedback" />
+
+    <item
+        android:id="@+id/menu_refresh_presets"
+        android:title="Refresh Presets" />
+
+    <item
+        android:id="@+id/menu_save_presets"
+        android:title="Save Presets" />
+
+    <item
+        android:id="@+id/menu_import_presets"
+        android:title="Import Presets" />
+
+</menu>

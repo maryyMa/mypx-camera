@@ -308,8 +308,8 @@ class CameraFragment : Fragment() {
         val isFlashOn = cameraManager?.isFlashOn() ?: false
         // 更新闪光灯按钮图标
         binding.buttonFlash.setImageResource(
-            if (isFlashOn) android.R.drawable.ic_menu_info_details
-            else android.R.drawable.ic_menu_manage
+            if (isFlashOn) R.drawable.ic_flash_on
+            else R.drawable.ic_flash_off
         )
         Log.d(TAG, "Flash toggled: $isFlashOn")
     }
