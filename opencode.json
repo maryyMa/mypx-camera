@@ -1,0 +1,19 @@
+{
+  "instructions": "AGENTS.md",
+  "permissions": {
+    "allow": [
+      "bash(./gradlew *)",
+      "bash(cd *)",
+      "bash(git *)",
+      "bash(ls *)",
+      "bash(cat *)",
+      "bash(find *)",
+      "bash(mkdir *)"
+    ],
+    "deny": [
+      "bash(rm -rf /)",
+      "bash(sudo *)",
+      "bash(chmod 777 *)"
+    ]
+  }
+}
