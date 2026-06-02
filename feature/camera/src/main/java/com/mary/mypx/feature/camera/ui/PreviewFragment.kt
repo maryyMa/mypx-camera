@@ -10,6 +10,7 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.widget.PopupMenu
+import android.widget.SeekBar
 import android.widget.Toast
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
@@ -72,6 +73,14 @@ class PreviewFragment : Fragment() {
      */
     private val viewModel: CameraViewModel by viewModels()
     
+    // ==================== 色彩调节 ====================
+    
+    /** 色彩调节工具 */
+    private lateinit var colorHelper: ColorAdjustmentHelper
+    
+    /** 是否正在色彩调节模式 */
+    private var isColorAdjustMode = false
+    
     // ==================== 图像数据 ====================
     
     /**
@@ -114,15 +123,19 @@ class PreviewFragment : Fragment() {
      * 
      * 【功能说明】
      * 1. 隐藏系统状态栏（全屏显示）
-     * 2. 获取从相机页面传递的照片URI
-     * 3. 加载照片图像
-     * 4. 设置UI交互
+     * 2. 初始化 GPUImage
+     * 3. 获取从相机页面传递的照片URI
+     * 4. 加载照片图像
+     * 5. 设置UI交互
      */
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         
         // 隐藏系统状态栏
         hideStatusBar()
+        
+        // 初始化色彩调节工具
+        colorHelper = ColorAdjustmentHelper(requireContext())
         
         // 获取照片URI字符串
         photoUriString = arguments?.getString("photoUriString")
@@ -270,9 +283,9 @@ class PreviewFragment : Fragment() {
             Toast.makeText(requireContext(), "Presets", Toast.LENGTH_SHORT).show()
         }
         
-        // 色彩调节
+        // 色彩调节 - 进入色彩调节模式
         binding.toolColor.setOnClickListener {
-            Toast.makeText(requireContext(), "Color Adjustment", Toast.LENGTH_SHORT).show()
+            enterColorAdjustMode()
         }
         
         // 人像美化
@@ -304,6 +317,76 @@ class PreviewFragment : Fragment() {
         binding.buttonCropConfirm.setOnClickListener {
             exitCropMode(true)
         }
+        
+        // 色彩调节取消按钮
+        binding.buttonColorCancel.setOnClickListener {
+            exitColorAdjustMode(false)
+        }
+        
+        // 色彩调节确认按钮
+        binding.buttonColorConfirm.setOnClickListener {
+            exitColorAdjustMode(true)
+        }
+        
+        // 设置色彩调节滑块监听器
+        setupColorSeekBars()
+    }
+    
+    /**
+     * 设置色彩调节滑块监听器
+     */
+    private fun setupColorSeekBars() {
+        // 亮度滑块
+        binding.seekbarBrightness.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+                if (fromUser) {
+                    colorHelper.setBrightness(progress)
+                    binding.textBrightnessValue.text = "${progress - 100}"
+                    applyColorAdjustment()
+                }
+            }
+            override fun onStartTrackingTouch(seekBar: SeekBar?) {}
+            override fun onStopTrackingTouch(seekBar: SeekBar?) {}
+        })
+        
+        // 对比度滑块
+        binding.seekbarContrast.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+                if (fromUser) {
+                    colorHelper.setContrast(progress)
+                    binding.textContrastValue.text = "${progress - 100}"
+                    applyColorAdjustment()
+                }
+            }
+            override fun onStartTrackingTouch(seekBar: SeekBar?) {}
+            override fun onStopTrackingTouch(seekBar: SeekBar?) {}
+        })
+        
+        // 饱和度滑块
+        binding.seekbarSaturation.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+                if (fromUser) {
+                    colorHelper.setSaturation(progress)
+                    binding.textSaturationValue.text = "${progress - 100}"
+                    applyColorAdjustment()
+                }
+            }
+            override fun onStartTrackingTouch(seekBar: SeekBar?) {}
+            override fun onStopTrackingTouch(seekBar: SeekBar?) {}
+        })
+    }
+    
+    /**
+     * 应用色彩调节到图片
+     * 【注意】必须在主线程调用，因为 GPUImage 需要 GL 上下文
+     */
+    private fun applyColorAdjustment() {
+        val sourceBitmap = originalBitmap ?: return
+        
+        // 在主线程处理图片（GPUImage 需要 GL 上下文）
+        val result = colorHelper.applyFilter(sourceBitmap)
+        processedBitmap = result
+        binding.imagePreview.setImageBitmap(result)
     }
     
     /**
@@ -346,6 +429,59 @@ class PreviewFragment : Fragment() {
         // 显示主工具栏，隐藏裁剪工具栏
         binding.mainToolbar.visibility = View.VISIBLE
         binding.cropToolbar.visibility = View.GONE
+        
+        // 显示水印和对比按钮
+        binding.watermarkOverlay.visibility = View.VISIBLE
+        binding.compareButton.visibility = View.VISIBLE
+    }
+    
+    /**
+     * 进入色彩调节模式
+     * 
+     * 【功能说明】
+     * 1. 显示色彩调节工具栏
+     * 2. 隐藏主工具栏
+     * 3. 隐藏水印和对比按钮
+     */
+    private fun enterColorAdjustMode() {
+        isColorAdjustMode = true
+        
+        // 隐藏主工具栏，显示色彩调节工具栏
+        binding.mainToolbar.visibility = View.GONE
+        binding.colorToolbar.visibility = View.VISIBLE
+        
+        // 隐藏水印和对比按钮
+        binding.watermarkOverlay.visibility = View.GONE
+        binding.compareButton.visibility = View.GONE
+    }
+    
+    /**
+     * 退出色彩调节模式
+     * 
+     * @param apply 是否应用色彩调节
+     */
+    private fun exitColorAdjustMode(apply: Boolean) {
+        isColorAdjustMode = false
+        
+        if (!apply) {
+            // 取消调节，恢复原始图片
+            colorHelper.reset()
+            originalBitmap?.let {
+                processedBitmap = null
+                binding.imagePreview.setImageBitmap(it)
+            }
+            // 重置滑块
+            binding.seekbarBrightness.progress = 100
+            binding.seekbarContrast.progress = 100
+            binding.seekbarSaturation.progress = 100
+            binding.textBrightnessValue.text = "0"
+            binding.textContrastValue.text = "0"
+            binding.textSaturationValue.text = "0"
+        }
+        
+        // 显示主工具栏，隐藏色彩调节工具栏
+        binding.mainToolbar.visibility = View.VISIBLE
+        binding.colorToolbar.visibility = View.GONE
         
         // 显示水印和对比按钮
         binding.watermarkOverlay.visibility = View.VISIBLE

@@ -58,4 +58,7 @@ dependencies {
     
     // Coroutines
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.0'
+    
+    // GPUImage - 图像滤镜处理
+    implementation 'jp.co.cyberagent.android:gpuimage:2.1.0'
 }
