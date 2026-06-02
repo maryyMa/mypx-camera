@@ -196,25 +196,25 @@ class PreviewFragment : Fragment() {
             showPopupMenu(view)
         }
         
-        // 对比按钮 - 按住显示原图，松开显示编辑后的图片
+        // 对比按钮 - 按住显示原图（无水印），松开显示编辑后的图片（有水印）
         binding.compareButton.setOnTouchListener { _, event ->
             when (event.action) {
                 android.view.MotionEvent.ACTION_DOWN -> {
-                    // 按住时显示原图
+                    // 按住时显示原图，隐藏水印
                     originalBitmap?.let {
                         binding.imagePreview.setImageBitmap(it)
                     }
-                    binding.compareButton.text = "Original"
+                    binding.watermarkOverlay.visibility = View.GONE
                     true
                 }
                 android.view.MotionEvent.ACTION_UP,
                 android.view.MotionEvent.ACTION_CANCEL -> {
-                    // 松开时显示编辑后的图片
+                    // 松开时显示编辑后的图片，显示水印
                     val editedBitmap = processedBitmap ?: originalBitmap
                     editedBitmap?.let {
                         binding.imagePreview.setImageBitmap(it)
                     }
-                    binding.compareButton.text = "Compare"
+                    binding.watermarkOverlay.visibility = View.VISIBLE
                     true
                 }
                 else -> false

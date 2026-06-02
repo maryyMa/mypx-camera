@@ -76,24 +76,32 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/title_bar" />
 
+    <!-- 水印覆盖层（平铺 mypx 文字） -->
+    <com.mary.mypx.feature.camera.ui.WatermarkOverlayView
+        android:id="@+id/watermark_overlay"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:layout_constraintBottom_toBottomOf="@+id/image_preview"
+        app:layout_constraintEnd_toEndOf="@+id/image_preview"
+        app:layout_constraintStart_toStartOf="@+id/image_preview"
+        app:layout_constraintTop_toTopOf="@+id/image_preview" />
+
     <!-- 对比按钮（按住显示原图，松开显示编辑后） -->
     <!-- 放在图片区域内右下角 -->
-    <TextView
+    <ImageButton
         android:id="@+id/compare_button"
-        android:layout_width="wrap_content"
-        android:layout_height="32dp"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
         android:layout_marginEnd="16dp"
         android:layout_marginBottom="16dp"
         android:background="@drawable/compare_button_bg"
+        android:contentDescription="Compare"
         android:elevation="4dp"
-        android:gravity="center"
-        android:paddingStart="16dp"
-        android:paddingEnd="16dp"
-        android:text="Compare"
-        android:textColor="@android:color/white"
-        android:textSize="12sp"
+        android:padding="8dp"
+        android:src="@drawable/ic_compare"
         app:layout_constraintBottom_toBottomOf="@+id/image_preview"
-        app:layout_constraintEnd_toEndOf="parent" />
+        app:layout_constraintEnd_toEndOf="parent"
+        app:tint="@android:color/white" />
 
     <!-- 工具栏容器 -->
     <LinearLayout
