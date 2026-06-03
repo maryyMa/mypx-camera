@@ -244,8 +244,8 @@ class CameraFragment : Fragment() {
      * 1. 调用 BeautyTextureView.takePhoto() 触发 OpenGL 截帧
      * 2. 渲染线程从帧缓冲区读取像素（已包含美颜效果）
      * 3. 回调返回 Bitmap
-     * 4. 保存到系统相册
-     * 5. 导航到预览页面
+     * 4. 保存到临时文件
+     * 5. 导航到预览页面（用户确认后再保存到相册）
      */
     private fun takePhoto() {
         Log.d(TAG, "takePhoto")
@@ -253,22 +253,39 @@ class CameraFragment : Fragment() {
         // 调用 BeautyTextureView 的拍照方法
         // 回调在主线程执行，返回的 Bitmap 已包含美颜效果
         beautyTextureView?.takePhoto { bitmap ->
-            // 使用协程在后台保存照片
-            lifecycleScope.launch {
-                val uri = savePhotoToStorage(bitmap)
-                if (uri != null) {
-                    Log.d(TAG, "Photo saved: $uri")
-                    Toast.makeText(requireContext(), "拍照成功", Toast.LENGTH_SHORT).show()
-                    
-                    // 导航到预览页面，传递照片 URI
-                    val bundle = Bundle().apply {
-                        putString("photoUriString", uri.toString())
-                    }
-                    findNavController().navigate(R.id.action_camera_to_preview, bundle)
-                } else {
-                    Toast.makeText(requireContext(), "保存失败", Toast.LENGTH_SHORT).show()
+            // 保存到临时文件
+            val tempUri = saveToTempFile(bitmap)
+            if (tempUri != null) {
+                Log.d(TAG, "Photo saved to temp: $tempUri")
+                
+                // 导航到预览页面，传递临时文件 URI
+                val bundle = Bundle().apply {
+                    putString("photoUriString", tempUri.toString())
                 }
+                findNavController().navigate(R.id.action_camera_to_preview, bundle)
+            } else {
+                Toast.makeText(requireContext(), "拍照失败", Toast.LENGTH_SHORT).show()
             }
+        }
+    }
+    
+    /**
+     * 保存照片到临时文件
+     * 
+     * @param bitmap 要保存的 Bitmap
+     * @return 临时文件的 URI，失败返回 null
+     */
+    private fun saveToTempFile(bitmap: Bitmap): android.net.Uri? {
+        return try {
+            val tempFile = java.io.File(requireContext().cacheDir, "temp_photo.jpg")
+            val outputStream = java.io.FileOutputStream(tempFile)
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 95, outputStream)
+            outputStream.flush()
+            outputStream.close()
+            android.net.Uri.fromFile(tempFile)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to save temp file", e)
+            null
         }
     }
     

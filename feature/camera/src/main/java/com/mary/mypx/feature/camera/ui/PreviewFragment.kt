@@ -4,6 +4,8 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Bundle
+import android.os.Environment
+import android.provider.MediaStore
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.MotionEvent
@@ -24,8 +26,13 @@ import com.mary.mypx.feature.camera.R
 import com.mary.mypx.feature.camera.databinding.FragmentPreviewBinding
 import com.mary.mypx.feature.camera.viewmodel.CameraViewModel
 import com.mary.mypx.sdk.FilterType as SdkFilterType
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.InputStream
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 /**
  * 预览Fragment - 照片预览和编辑页面的UI控制器
@@ -693,64 +700,65 @@ class PreviewFragment : Fragment() {
         }
     }
     
-    // ==================== 图像转换 ====================
-    
-    /**
-     * 将Bitmap转换为ByteArray
-     * 
-     * 【功能说明】
-     * 将Bitmap格式转换为JPEG格式的字节数组，
-     * 用于保存到存储或传输。
-     * 
-     * 【参数说明】
-     * @param bitmap 要转换的Bitmap
-     * @return JPEG格式的字节数组
-     * 
-     * 【压缩质量】
-     * 使用90%的质量，平衡文件大小和图像质量
-     */
-    private fun bitmapToByteArray(bitmap: Bitmap): ByteArray {
-        val outputStream = java.io.ByteArrayOutputStream()
-        bitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, 90, outputStream)
-        return outputStream.toByteArray()
-    }
-    
     // ==================== 保存功能 ====================
     
     /**
-     * 保存照片 - 将照片保存到设备存储
+     * 保存照片 - 将照片保存到系统相册
      * 
      * 【功能说明】
-     * 1. 将Bitmap转换为ByteArray
-     * 2. 调用ViewModel保存照片
+     * 1. 获取当前显示的图片（处理后的或原始的）
+     * 2. 使用 MediaStore API 保存到系统相册
      * 3. 显示保存结果
      * 
-     * 【参数说明】
      * @param bitmap 要保存的Bitmap
-     * 
-     * 【保存流程】
-     * Bitmap → ByteArray → ViewModel → Repository → 存储
      */
     private fun savePhoto(bitmap: Bitmap) {
-        // 将Bitmap转换为ByteArray
-        val outputStream = java.io.ByteArrayOutputStream()
-        bitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, 90, outputStream)
-        val imageData = outputStream.toByteArray()
-        
-        // 在协程中执行保存操作
         lifecycleScope.launch {
-            // 调用ViewModel保存照片
-            val result = viewModel.savePhoto(imageData)
-            result.fold(
-                onSuccess = {
-                    // 保存成功，显示成功提示
-                    Toast.makeText(requireContext(), "Photo saved", Toast.LENGTH_SHORT).show()
-                },
-                onFailure = { error ->
-                    // 保存失败，显示错误提示
-                    Toast.makeText(requireContext(), "Failed to save photo: ${error.message}", Toast.LENGTH_SHORT).show()
+            val uri = saveToGallery(bitmap)
+            if (uri != null) {
+                Toast.makeText(requireContext(), "Photo saved to gallery", Toast.LENGTH_SHORT).show()
+            } else {
+                Toast.makeText(requireContext(), "Failed to save photo", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+    
+    /**
+     * 保存照片到系统相册
+     * 
+     * @param bitmap 要保存的 Bitmap
+     * @return 照片的 content:// URI，失败返回 null
+     */
+    private suspend fun saveToGallery(bitmap: Bitmap): Uri? {
+        return withContext(Dispatchers.IO) {
+            try {
+                val timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
+                val fileName = "IMG_$timeStamp.jpg"
+                
+                val contentValues = android.content.ContentValues().apply {
+                    put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
+                    put(MediaStore.MediaColumns.MIME_TYPE, "image/jpeg")
+                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                        put(MediaStore.Images.Media.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + "/MyPx")
+                    }
                 }
-            )
+                
+                val uri = requireContext().contentResolver.insert(
+                    MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                    contentValues
+                )
+                
+                uri?.let { imageUri ->
+                    requireContext().contentResolver.openOutputStream(imageUri)?.use { outputStream ->
+                        bitmap.compress(Bitmap.CompressFormat.JPEG, 95, outputStream)
+                    }
+                }
+                
+                uri
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to save photo to gallery", e)
+                null
+            }
         }
     }
     
