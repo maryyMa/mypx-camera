@@ -2,6 +2,12 @@
 
 一款基于 Kotlin + Jetpack 的 Android 相机应用，核心功能是基于 OpenGL ES 的实时美颜渲染。采用 Clean Architecture + MVVM 架构，支持拍照、美颜调节、照片预览和 GitHub 云存储。
 
+## 功能演示
+
+https://github.com/user-attachments/assets/demo.mp4
+
+<video src="docs/demo.mp4" controls width="300"></video>
+
 ## 功能特性
 
 ### 核心功能
