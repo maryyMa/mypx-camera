@@ -1,62 +1,67 @@
-# MyPx Camera - Android Camera Demo
+# MyPx Camera - Android 相机应用
 
-一个基于 Kotlin + Jetpack 的 Android 相机应用演示项目，采用 Clean Architecture 和 MVVM 架构，集成 CameraX、TensorFlow Lite 和 OpenGL ES 实现 AI 实时滤镜功能。
+一款基于 Kotlin + Jetpack 的 Android 相机应用，核心功能是基于 OpenGL ES 的实时美颜渲染。采用 Clean Architecture + MVVM 架构，支持拍照、美颜调节、照片预览和 GitHub 云存储。
 
 ## 功能特性
 
 ### 核心功能
 - **实时相机预览**：基于 CameraX 实现，支持前后置摄像头切换、闪光灯控制
-- **AI 实时滤镜**：
-  - 美颜滤镜（亮度、对比度增强）
-  - 超分辨率（低清预览变高清）
-  - 夜景增强（提亮 + 降噪）
-- **拍照与处理**：一键拍照、AI 处理、原图与处理后对比
-- **性能监控**：实时显示帧率（FPS）、AI 推理耗时、内存占用
+- **OpenGL 实时美颜**：
+  - 双边滤波（Bilateral Filter）磨皮
+  - 亮度调整（提亮肤色）
+  - 对比度增强（立体感）
+  - 饱和度调整（红润肤色）
+  - 可调节强度（0% - 100%）
+- **拍照与预览**：一键拍照、实时美颜效果预览、原图对比
+- **照片保存**：保存到系统相册
+- **GitHub 云上传**：将照片上传到 GitHub 仓库（需配置 Token）
 
 ### 技术亮点
-- **模块化 SDK 设计**：相机与 AI 处理封装为独立 `camera-sdk` 模块，可复用
+- **OpenGL ES 2.0 实时渲染**：GPU 加速的美颜处理，30fps+ 流畅体验
+- **模块化 SDK 设计**：相机与 OpenGL 渲染封装为独立 `camera-sdk` 模块
 - **Clean Architecture 分层**：UI → Domain → Data，职责清晰
-- **MVVM + 单向数据流**：ViewModel + StateFlow + LiveData
-- **OpenGL ES 实时渲染**：支持 GPU 加速的滤镜处理
-- **性能优化**：内存监控、帧率统计、推理耗时测量
+- **MVVM + 单向数据流**：ViewModel + StateFlow
+- **跨线程安全**：渲染线程与主线程通过 `@Volatile` 标志通信
 
 ## 技术栈
 
 | 类别 | 技术 |
 |------|------|
-| 语言 | Kotlin 1.9.22 |
+| 语言 | Kotlin |
 | 架构 | Clean Architecture + MVVM |
-| 相机 | CameraX 1.3.4 |
-| AI 推理 | TensorFlow Lite 2.16.1 |
-| 图像渲染 | OpenGL ES 2.0/3.0 |
-| 异步处理 | Kotlin Coroutines 1.8.0 |
-| 依赖注入 | 手动注入（可扩展 Hilt/Koin） |
-| 导航 | Jetpack Navigation 2.7.7 |
-| 生命周期 | Jetpack Lifecycle 2.8.0 |
+| 相机 | CameraX |
+| 图像渲染 | OpenGL ES 2.0（双边滤波美颜） |
+| 网络请求 | Retrofit 2.9 + OkHttp 4.12 |
+| 异步处理 | Kotlin Coroutines |
+| 导航 | Jetpack Navigation |
+| 生命周期 | Jetpack Lifecycle |
+| UI | ViewBinding + Material Design |
 
 ## 项目结构
 
 ```
-com.mary.mypx
+mypx
 ├── app                    # 入口应用模块
 ├── feature
-│   └── camera             # 相机 UI 层（Fragment、ViewModel）
-├── domain                 # 领域层（UseCase、Repository 接口、Model）
+│   └── camera             # 相机 UI 层（Fragment、ViewModel、网络）
+├── domain                 # 领域层（Repository 接口、Model）
 ├── data
-│   ├── camera             # 相机数据层（CameraX 封装）
-│   └── ai                 # AI 数据层（TensorFlow Lite 处理）
+│   ├── camera             # 相机数据层
+│   └── ai                 # AI 数据层
 ├── core
 │   ├── common             # 工具类、扩展函数
 │   └── ui                 # 通用 UI 组件、主题
-└── camera-sdk             # 独立 SDK 模块（可剥离复用）
+└── camera-sdk             # 独立 SDK 模块（OpenGL 渲染、相机管理）
 ```
 
 ### 模块依赖关系
 ```
-app → feature:camera → camera-sdk
-                    → domain
-                    → core:ui
-                    → core:common
+app ──→ feature:camera ──→ camera-sdk (独立 SDK)
+ │          │──→ domain (纯 Kotlin)
+ │          │──→ core:ui
+ │          └──→ core:common
+ ├──→ core:ui
+ └──→ core:common
 ```
 
 ## 快速开始
@@ -75,16 +80,27 @@ app → feature:camera → camera-sdk
    cd mypx
    ```
 
-2. **使用 Android Studio 打开项目**
+2. **配置 GitHub Token（可选，用于图片上传）**
+   
+   在项目根目录创建 `local.properties` 文件，添加：
+   ```properties
+   sdk.dir=你的SDK路径
+   GITHUB_TOKEN=你的GitHub Token
+   ```
+   
+   > Token 生成地址：https://github.com/settings/tokens
+   > 所需权限：`repo`（Full control of private repositories）
+
+3. **使用 Android Studio 打开项目**
    - 启动 Android Studio
    - 选择 "Open an existing project"
    - 选择项目根目录
 
-3. **同步项目**
+4. **同步项目**
    - Android Studio 会自动下载依赖并同步项目
    - 等待 Gradle 同步完成
 
-4. **运行应用**
+5. **运行应用**
    - 连接 Android 设备或启动模拟器
    - 点击 "Run" 按钮或使用 `Shift + F10`
 
@@ -110,60 +126,55 @@ app → feature:camera → camera-sdk
 
 ### `feature:camera` 模块
 相机功能的主要 UI 实现：
-- `CameraFragment`：相机预览界面，处理用户交互
-- `PreviewFragment`：拍照结果预览，支持滤镜应用
+- `CameraFragment`：相机预览界面，处理用户交互（拍照、切换摄像头、闪光灯）
+- `PreviewFragment`：拍照结果预览，支持美颜调节、保存、上传
 - `CameraViewModel`：管理相机状态和业务逻辑
+- `network/`：GitHub 上传相关（API、Service、Model）
 
 ### `domain` 模块
 纯 Kotlin 模块，不依赖 Android：
-- **Model**：定义核心数据类（Photo、CameraState、FilterType 等）
+- **Model**：定义核心数据类（CameraState、FilterType 等）
 - **Repository**：定义数据操作接口
-- **UseCase**：封装业务逻辑（TakePhotoUseCase、ProcessImageUseCase 等）
-
-### `data:camera` 模块
-相机数据层实现，封装 CameraX API：
-- 相机初始化、预览、拍照
-- 前后置切换、闪光灯控制
-
-### `data:ai` 模块
-AI 处理数据层，集成 TensorFlow Lite：
-- 图像处理算法实现
-- 模型加载与推理
 
 ### `camera-sdk` 模块
 **独立 SDK 模块**，可剥离复用：
-- `CameraManager`：相机管理核心类
-- `ImageProcessor`：图像处理接口
-- `TFLiteImageProcessor`：TensorFlow Lite 处理实现
-- `OpenGLFilterRenderer`：OpenGL ES 滤镜渲染器
-- `PerformanceMonitor`：性能监控工具
 
-对外暴露简单 API：
-```kotlin
-// 初始化
-val cameraManager = CameraManager(context)
-val imageProcessor = TFLiteImageProcessor(context)
-
-// 开始预览
-cameraManager.startPreview(lifecycleOwner, previewView)
-
-// 拍照
-cameraManager.takePhoto(
-    onImageCaptured = { result -> /* 处理结果 */ },
-    onError = { error -> /* 处理错误 */ }
-)
-
-// 应用滤镜
-val processedBitmap = imageProcessor.process(bitmap, FilterType.BEAUTY)
-```
+- `BeautyTextureView`：核心预览视图，集成 OpenGL 渲染管线
+  - EGL 环境管理
+  - 渲染线程管理
+  - SurfaceTexture 生命周期
+  - 拍照截帧
+- `BeautyGLRenderer`：OpenGL 美颜渲染器
+  - 双边滤波着色器
+  - 亮度/对比度/饱和度调节
+  - OES 纹理处理
+- `CameraManager`：CameraX 封装
+  - 相机预览启动
+  - 前后置切换
+  - 闪光灯控制
 
 ### `core:common` 模块
-通用工具类和扩展函数。
+通用工具类和扩展函数（纯 Kotlin/JVM）。
 
 ### `core:ui` 模块
 通用 UI 组件、主题、样式定义。
 
 ## 架构设计
+
+### OpenGL 渲染管线
+```
+CameraX 相机帧
+     ↓
+SurfaceTexture (OES 纹理)
+     ↓
+OpenGL 片段着色器（美颜处理）
+  - 双边滤波（磨皮）
+  - 亮度调整
+  - 对比度增强
+  - 饱和度调整
+     ↓
+TextureView 显示到屏幕
+```
 
 ### Clean Architecture 分层
 ```
@@ -172,18 +183,18 @@ val processedBitmap = imageProcessor.process(bitmap, FilterType.BEAUTY)
 │  Fragment → ViewModel → UiState    │
 ├─────────────────────────────────────┤
 │        Domain Layer (domain)        │
-│  UseCase → Repository Interface    │
+│  Repository Interface → Model      │
 ├─────────────────────────────────────┤
 │         Data Layer (data)           │
-│  Repository Impl → CameraX/TF Lite │
+│  Repository Impl → CameraX/API     │
 └─────────────────────────────────────┘
 ```
 
-### 单向数据流
+### 线程模型
 ```
-User Action → ViewModel → UseCase → Repository
-     ↑                                    ↓
-     └──── UiState ← StateFlow ← Result ←┘
+主线程：UI 更新、用户交互、拍照回调
+渲染线程：EGL 初始化、OpenGL 渲染、截帧
+IO 线程：文件读写、网络请求
 ```
 
 ### 状态管理
@@ -192,111 +203,87 @@ sealed class CameraState {
     object Initializing : CameraState()
     object Preview : CameraState()
     object TakingPhoto : CameraState()
-    data class Processing(val progress: Float) : CameraState()
     data class Error(val message: String) : CameraState()
 }
 ```
 
+## GitHub 云上传
+
+### 功能说明
+支持将拍摄的照片上传到 GitHub 仓库，使用 GitHub Contents API。
+
+### 配置步骤
+1. 在 GitHub 生成 Personal Access Token
+2. 在 `local.properties` 中配置 `GITHUB_TOKEN`
+3. 重新构建项目
+
+### 技术实现
+- 使用 Retrofit 2.9 + OkHttp 4.12
+- 图片转 Base64 编码
+- 通过 PUT 请求上传到指定仓库目录
+- Token 通过 BuildConfig 注入，不硬编码
+
 ## 性能优化
 
 ### 已实现的优化
-1. **内存监控**：实时监控 Java 堆内存和 Native 堆内存
-2. **帧率统计**：监控预览帧率，确保 30fps+ 流畅体验
-3. **推理耗时**：测量 AI 处理时间，优化至 <100ms
-4. **图像处理优化**：使用协程进行异步处理，避免阻塞主线程
+1. **GPU 加速**：使用 OpenGL ES 进行美颜处理，比 CPU 处理快 10-100 倍
+2. **实时渲染**：30fps+ 流畅预览
+3. **内存管理**：及时释放 Bitmap、SurfaceTexture 等资源
+4. **异步处理**：使用协程处理 IO 操作
 
-### 性能指标
-- 预览帧率：稳定 30fps+
-- AI 推理耗时：<100ms（美颜滤镜）
-- 内存占用：监控并优化 OOM 风险
-
-## 扩展指南
-
-### 添加新滤镜
-1. 在 `FilterType` 枚举中添加新类型
-2. 在 `TFLiteImageProcessor` 中实现处理逻辑
-3. 在 `OpenGLFilterRenderer` 中添加着色器支持
-4. 更新 UI 中的滤镜选择器
-
-### 集成真实 TF Lite 模型
-1. 将 `.tflite` 模型文件放入 `assets` 目录
-2. 使用 TensorFlow Lite Support 库加载模型
-3. 实现图像预处理和后处理逻辑
-4. 替换 `TFLiteImageProcessor` 中的模拟实现
-
-### 模块化扩展
-- 添加新功能模块：在 `feature` 目录下创建新模块
-- 添加新数据源：在 `data` 目录下创建新模块
-- 扩展 SDK 功能：在 `camera-sdk` 中添加新 API
+### 美颜算法
+使用双边滤波（Bilateral Filter）实现磨皮：
+- 保留边缘（重要特征）
+- 平滑皮肤（去除噪点）
+- 可调节强度（0.0 - 1.0）
 
 ## 应用图标
 
 ### 图标设计
-应用图标采用简洁现代的设计风格，体现相机和AI功能：
+应用图标采用简洁现代的设计风格，体现相机和 AI 功能：
 
-- **主色调**：紫色渐变（#6200EE → #3700B3），符合Material Design规范
-- **相机元素**：
-  - 白色相机主体（圆角矩形）
-  - 紫色镜头（同心圆设计）
-  - 黄色闪光灯
-  - 灰色取景器
-- **AI元素**：
-  - 黄色星星装饰，代表AI滤镜功能
-  - 小圆点装饰，增强视觉层次
+- **主色调**：紫色渐变（#6200EE → #3700B3），符合 Material Design 规范
+- **相机元素**：白色相机主体、紫色镜头、黄色闪光灯
+- **AI 元素**：黄色星星装饰，代表 AI 滤镜功能
 
 ### 图标文件
 - **自适应图标**：`mipmap-anydpi-v26/ic_launcher.xml`
 - **圆形图标**：`mipmap-anydpi-v26/ic_launcher_round.xml`
 - **背景**：`drawable/ic_launcher_background.xml`（紫色渐变）
-- **前景**：`drawable/ic_launcher_foreground.xml`（相机和AI元素）
-
-### 生成图标
-推荐使用Android Studio的Image Asset工具生成所有密度的图标：
-
-1. 在Android Studio中，右键点击 `app/src/main/res` 目录
-2. 选择 `New → Image Asset`
-3. 选择 `Launcher Icons (Legacy and Adaptive)`
-4. 配置图标选项：
-   - 前景图层：选择相机图标
-   - 背景图层：选择渐变颜色 #6200EE → #3700B3
-   - 形状：圆形或方形
-5. 点击 `Next` 然后 `Finish`
-
-### 图标预览
-```
-┌─────────────────┐
-│                 │
-│   📷 AI Camera  │
-│                 │
-│  紫色渐变背景    │
-│  白色相机主体    │
-│  紫色镜头        │
-│  黄色星星装饰    │
-│                 │
-└─────────────────┘
-```
+- **前景**：`drawable/ic_launcher_foreground.xml`（相机和 AI 元素）
 
 ## 常见问题
 
 ### Q: 如何切换前后置摄像头？
-A: 点击界面右下角的切换按钮，或调用 `cameraManager.switchCamera()`
+A: 点击界面右下角的切换按钮。
 
 ### Q: 如何调整美颜强度？
-A: 修改 `TFLiteImageProcessor.applyBeautyFilter()` 中的参数（亮度、对比度系数）
+A: 在相机预览界面，拖动底部的"美颜"滑块（0% - 100%）。
 
-### Q: 如何集成真实的 AI 模型？
-A: 参考 "集成真实 TF Lite 模型" 部分，替换模拟实现
+### Q: 如何上传照片到 GitHub？
+A: 在预览页面点击"上传"按钮。需要先在 `local.properties` 中配置 `GITHUB_TOKEN`。
 
-### Q: 如何优化性能？
-A: 使用 `PerformanceMonitor` 监控各项指标，针对瓶颈进行优化
+### Q: 相机预览是白的/黑的？
+A: 请检查相机权限是否已授予，以及设备是否支持 OpenGL ES 2.0。
 
 ## 贡献指南
 
 1. Fork 项目
 2. 创建功能分支：`git checkout -b feature/your-feature`
-3. 提交更改：`git commit -m 'Add some feature'`
+3. 提交更改：`git commit -m 'feat(scope): Add some feature'`
 4. 推送分支：`git push origin feature/your-feature`
 5. 创建 Pull Request
+
+### 提交规范
+```
+feat(scope): 新功能
+fix(scope): 修复 bug
+refactor(scope): 重构
+docs: 文档更新
+style: 代码格式调整
+test: 添加测试
+chore: 构建/工具变更
+```
 
 ## 许可证
 
@@ -315,5 +302,3 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 ```
-
-
