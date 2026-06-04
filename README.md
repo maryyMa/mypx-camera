@@ -4,9 +4,7 @@
 
 ## 功能演示
 
-https://github.com/user-attachments/assets/demo.mp4
-
-<video src="docs/demo.mp4" controls width="300"></video>
+[![功能演示](https://img.shields.io/badge/▶_观看演示视频-blue)](docs/demo.mp4)
 
 ## 功能特性
 
