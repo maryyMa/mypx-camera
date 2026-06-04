@@ -72,8 +72,15 @@ class BeautyTextureView @JvmOverloads constructor(
      * SurfaceTexture 就绪回调
      * 当渲染线程创建好 SurfaceTexture 后，通过此回调通知 CameraFragment
      * CameraFragment 收到后会启动 CameraX 预览
+     * 
+     * 如果设置回调时 SurfaceTexture 已就绪，会立即触发回调
      */
     var onSurfaceTextureReady: ((SurfaceTexture) -> Unit)? = null
+        set(value) {
+            field = value
+            // 如果 SurfaceTexture 已经就绪，立即触发回调
+            cameraSurfaceTexture?.let { value?.invoke(it) }
+        }
     
     /** 相机的 SurfaceTexture - 接收 CameraX 输出的帧数据 */
     private var cameraSurfaceTexture: SurfaceTexture? = null

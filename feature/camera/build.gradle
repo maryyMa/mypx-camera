@@ -3,6 +3,12 @@ plugins {
     id 'org.jetbrains.kotlin.android'
 }
 
+def localProperties = new Properties()
+def localPropertiesFile = rootProject.file('local.properties')
+if (localPropertiesFile.exists()) {
+    localProperties.load(localPropertiesFile.newDataInputStream())
+}
+
 android {
     namespace 'com.mary.mypx.feature.camera'
     compileSdk 34
@@ -13,6 +19,8 @@ android {
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles "consumer-rules.txt"
+
+        buildConfigField "String", "GITHUB_TOKEN", "\"${localProperties.getProperty('GITHUB_TOKEN', '')}\""
     }
 
     buildTypes {
@@ -30,6 +38,7 @@ android {
     }
     buildFeatures {
         viewBinding true
+        buildConfig true
     }
 }
 
@@ -58,6 +67,12 @@ dependencies {
     
     // Coroutines
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.0'
+    
+    // Retrofit + OkHttp - 网络请求
+    implementation 'com.squareup.retrofit2:retrofit:2.9.0'
+    implementation 'com.squareup.retrofit2:converter-gson:2.9.0'
+    implementation 'com.squareup.okhttp3:okhttp:4.12.0'
+    implementation 'com.squareup.okhttp3:logging-interceptor:4.12.0'
     
     // GPUImage - 图像滤镜处理
     implementation 'jp.co.cyberagent.android:gpuimage:2.1.0'

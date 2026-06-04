@@ -319,6 +319,32 @@
 
                 </LinearLayout>
 
+                <!-- 上传到 GitHub -->
+                <LinearLayout
+                    android:id="@+id/tool_upload"
+                    android:layout_width="72dp"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:orientation="vertical"
+                    android:padding="4dp">
+
+                    <ImageView
+                        android:layout_width="28dp"
+                        android:layout_height="28dp"
+                        android:contentDescription="Upload"
+                        android:src="@drawable/ic_upload"
+                        app:tint="@android:color/white" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:text="Upload"
+                        android:textColor="@android:color/white"
+                        android:textSize="11sp" />
+
+                </LinearLayout>
+
             </LinearLayout>
 
         </HorizontalScrollView>

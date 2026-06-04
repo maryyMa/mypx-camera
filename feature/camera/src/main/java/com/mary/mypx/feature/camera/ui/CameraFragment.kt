@@ -253,6 +253,12 @@ class CameraFragment : Fragment() {
         // 调用 BeautyTextureView 的拍照方法
         // 回调在主线程执行，返回的 Bitmap 已包含美颜效果
         beautyTextureView?.takePhoto { bitmap ->
+            // 检查 Fragment 是否仍然有效
+            if (!isAdded || _binding == null) {
+                Log.w(TAG, "Fragment not attached, skipping navigation")
+                return@takePhoto
+            }
+            
             // 保存到临时文件
             val tempUri = saveToTempFile(bitmap)
             if (tempUri != null) {
@@ -262,7 +268,12 @@ class CameraFragment : Fragment() {
                 val bundle = Bundle().apply {
                     putString("photoUriString", tempUri.toString())
                 }
-                findNavController().navigate(R.id.action_camera_to_preview, bundle)
+                try {
+                    findNavController().navigate(R.id.action_camera_to_preview, bundle)
+                } catch (e: Exception) {
+                    Log.e(TAG, "Navigation failed", e)
+                    Toast.makeText(requireContext(), "导航失败", Toast.LENGTH_SHORT).show()
+                }
             } else {
                 Toast.makeText(requireContext(), "拍照失败", Toast.LENGTH_SHORT).show()
             }

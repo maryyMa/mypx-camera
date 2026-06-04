@@ -315,6 +315,11 @@ class PreviewFragment : Fragment() {
             Toast.makeText(requireContext(), "Clothing Beauty", Toast.LENGTH_SHORT).show()
         }
         
+        // 上传到 GitHub
+        binding.toolUpload.setOnClickListener {
+            uploadToGitHub()
+        }
+        
         // 裁剪取消按钮
         binding.buttonCropCancel.setOnClickListener {
             exitCropMode(false)
@@ -758,6 +763,85 @@ class PreviewFragment : Fragment() {
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to save photo to gallery", e)
                 null
+            }
+        }
+    }
+    
+    // ==================== GitHub 上传 ====================
+    
+    /**
+     * 上传图片到 GitHub
+     * 
+     * 【功能说明】
+     * 1. 获取当前显示的图片（处理后的或原始的）
+     * 2. 将 Bitmap 转换为字节数组
+     * 3. 调用 GitHubUploadService 上传
+     * 4. 显示上传结果
+     */
+    private fun uploadToGitHub() {
+        val token = com.mary.mypx.feature.camera.BuildConfig.GITHUB_TOKEN
+        if (token.isEmpty()) {
+            Toast.makeText(requireContext(), "GitHub token not configured", Toast.LENGTH_LONG).show()
+            return
+        }
+        
+        // 获取当前显示的图片
+        val bitmap = processedBitmap ?: originalBitmap
+        if (bitmap == null) {
+            Toast.makeText(requireContext(), "No image to upload", Toast.LENGTH_SHORT).show()
+            return
+        }
+        
+        // 显示上传中提示
+        val progressDialog = android.app.ProgressDialog(requireContext()).apply {
+            setMessage("Uploading to GitHub...")
+            setCancelable(false)
+            show()
+        }
+        
+        lifecycleScope.launch {
+            try {
+                // 将 Bitmap 转换为字节数组
+                val result = withContext(Dispatchers.IO) {
+                    try {
+                        val outputStream = java.io.ByteArrayOutputStream()
+                        bitmap.compress(Bitmap.CompressFormat.JPEG, 95, outputStream)
+                        val imageBytes = outputStream.toByteArray()
+                        // 上传到 GitHub
+                        val service =
+                            com.mary.mypx.feature.camera.network.GitHubUploadService(token)
+                        service.uploadImage(imageBytes)
+                    } catch (e: Exception) {
+                        Result.failure(e)
+                    }
+                }
+                result.fold(
+                    onSuccess = { url ->
+                        Log.d(TAG, "Upload successful: $url")
+                        Toast.makeText(
+                            requireContext(),
+                            "Upload successful!",
+                            Toast.LENGTH_LONG
+                        ).show()
+                    },
+                    onFailure = { error ->
+                        Log.e(TAG, "Upload failed", error)
+                        Toast.makeText(
+                            requireContext(),
+                            "Upload failed: ${error.message}",
+                            Toast.LENGTH_LONG
+                        ).show()
+                    }
+                )
+            } catch (e: Exception) {
+                Log.e(TAG, "Upload error", e)
+                Toast.makeText(
+                    requireContext(),
+                    "Upload error: ${e.message}",
+                    Toast.LENGTH_LONG
+                ).show()
+            } finally {
+                progressDialog.dismiss()
             }
         }
     }

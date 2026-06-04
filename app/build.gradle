@@ -3,6 +3,13 @@ plugins {
     id 'org.jetbrains.kotlin.android'
 }
 
+// Read local.properties
+def localProperties = new Properties()
+def localPropertiesFile = rootProject.file('local.properties')
+if (localPropertiesFile.exists()) {
+    localProperties.load(new FileInputStream(localPropertiesFile))
+}
+
 android {
     namespace 'com.mary.mypx.app'
     compileSdk 34
@@ -18,6 +25,9 @@ android {
         vectorDrawables {
             useSupportLibrary true
         }
+
+        // Inject GitHub token from local.properties into BuildConfig
+        buildConfigField "String", "GITHUB_TOKEN", "\"${localProperties.getProperty('GITHUB_TOKEN', '')}\""
     }
 
     buildTypes {
@@ -35,6 +45,7 @@ android {
     }
     buildFeatures {
         viewBinding true
+        buildConfig true
     }
     packaging {
         resources {
