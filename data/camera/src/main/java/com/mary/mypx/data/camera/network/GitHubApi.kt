@@ -1,4 +1,4 @@
-package com.mary.mypx.feature.camera.network
+package com.mary.mypx.data.camera.network
 
 import retrofit2.http.Body
 import retrofit2.http.Header
@@ -30,3 +30,20 @@ interface GitHubApi {
         @Body request: GitHubUploadRequest
     ): GitHubUploadResponse
 }
+
+data class GitHubUploadRequest(
+    val message: String,
+    val content: String,
+    val branch: String = "master"
+)
+
+data class GitHubUploadResponse(
+    val content: ContentInfo?
+)
+
+data class ContentInfo(
+    val name: String,
+    val path: String,
+    val sha: String,
+    val download_url: String?
+)
